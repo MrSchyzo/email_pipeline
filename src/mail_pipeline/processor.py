@@ -11,7 +11,6 @@ def process_message(raw_bytes: bytes | bytearray, attachments_dir: str, uid: str
     date = extract_email_date(msg)
     print(f"Processing message UID {uid} @ {date}: [{sender}] - {subject}")
 
-
     attachments_dir = Path(attachments_dir)
     attachments_dir.mkdir(exist_ok=True)
 
@@ -28,6 +27,7 @@ def process_message(raw_bytes: bytes | bytearray, attachments_dir: str, uid: str
                 files = files + [path.resolve()]
                 
     context = EmailContext(
+        uid=uid,
         subject=subject,
         src=sender,
         dst=[decode_as_utf_8(x) for x in msg.get_all("To", [])],

@@ -13,6 +13,7 @@ __plugin_venvs_path = Path("plugin_envs")
 
 @dataclass
 class EmailContext:
+    uid: str
     subject: str
     src: str
     dst: list[str]
@@ -57,6 +58,7 @@ def ensure_venv(plugin_dir):
 
     subprocess_run([sys.executable, "-m", "venv", venv])
     subprocess_run([venv / "bin" / "pip", "install", "-r", plugin_dir / "requirements.txt"])
+    subprocess_run([venv / "bin" / "pip", "install", "--upgrade", "certifi"])
     
 def subprocess_run(cmd, input=None, cwd=None, env=None):
     result = subprocess.run(
