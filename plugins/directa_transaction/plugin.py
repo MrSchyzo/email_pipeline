@@ -7,6 +7,8 @@ def check(ctx):
         return False
     if "ordine eseguito" not in ctx["body_text"].lower():
         return False
+    if "automatica@directa.it" not in ctx["src"]:
+        return False
     if not ctx["attachments"]:
         return False
     return True

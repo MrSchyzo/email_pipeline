@@ -4,6 +4,8 @@ import json, sys, os
 def check(ctx):
     if "SERVIZIO DI AVVISO SCADENZA BOLLO" not in ctx["subject"]:
         return False
+    if "tasseauto@regione.toscana.it" not in ctx["src"]:
+        return False
     if not ctx["attachments"]:
         return False
     return True
