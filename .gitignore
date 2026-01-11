@@ -8,3 +8,4 @@ state/
 attachments/
 main.spec
 src/**.egg-info
+plugin_envs/

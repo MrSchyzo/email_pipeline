@@ -1,12 +1,13 @@
 import email
+from mailbox import Message
 from pathlib import Path
 
 from mail_pipeline.plugin_engine import EmailContext, execute_plugins
 
-def process_message(raw_bytes, attachments_dir):
+def process_message(raw_bytes: bytes | bytearray, attachments_dir: str, uid: str) -> bool:
     msg = email.message_from_bytes(raw_bytes)
-    subject = msg.get("Subject", "")
-    sender = msg.get("From", "")
+    subject = decode_as_utf_8(msg.get("Subject", ""))
+    sender = decode_as_utf_8(msg.get("From", ""))
 
     attachments_dir = Path(attachments_dir)
     attachments_dir.mkdir(exist_ok=True)
@@ -17,16 +18,16 @@ def process_message(raw_bytes, attachments_dir):
         if part.get_content_type().startswith('text/'):
             body_parts = body_parts + [part.get_payload(decode=True).decode('utf-8', errors='ignore')]
         elif part.get_content_disposition() == "attachment":
-            filename = part.get_filename()
+            filename = decode_as_utf_8(part.get_filename())
             if filename:
-                path = attachments_dir / filename
+                path = attachments_dir / f'{uid}_{filename}'
                 path.write_bytes(part.get_payload(decode=True))
                 files = files + [path.resolve()]
                 
     context = EmailContext(
         subject=subject,
         src=sender,
-        dst=msg.get_all("To", []),
+        dst=[decode_as_utf_8(x) for x in msg.get_all("To", [])],
         body_text="\n".join(body_parts),
         attachments=files,
         date=extract_email_date(msg)
@@ -36,7 +37,20 @@ def process_message(raw_bytes, attachments_dir):
 
     return True
 
-def extract_email_date(msg):
+def decode_as_utf_8(raw_header: str | None) -> str | None:
+    if raw_header is None:
+        return None
+    decoded_parts = email.header.decode_header(raw_header)
+    return ''.join(
+        text.decode(charset or 'utf-8') if isinstance(text, bytes) else text
+        for text, charset in decoded_parts
+    )
+    
+def decode_part_as_utf_8(part: Message) -> str:
+    charset = part.get_content_charset() or 'utf-8'
+    part.get_payload(decode=True).decode(charset, errors='ignore')
+
+def extract_email_date(msg: Message):
     date_str = msg.get("date")
     if not date_str:
         return None

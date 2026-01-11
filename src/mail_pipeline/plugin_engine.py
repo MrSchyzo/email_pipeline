@@ -6,6 +6,8 @@ import json
 import subprocess
 import sys
 
+from mail_pipeline.env import load_env
+
 @dataclass
 class EmailContext:
     subject: str
@@ -42,7 +44,9 @@ def run_plugin(plugin_dir, ctx_json: str):
         text=True,
         cwd=plugin_dir,
         check=False,
+        env=load_env(plugin_dir / ".env")
     )
+                
     
 def execute_plugins(ctx: EmailContext):
     ctx_json = json.dumps({
