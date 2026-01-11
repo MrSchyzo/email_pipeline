@@ -23,7 +23,8 @@ def main():
         for uid in client.fetch_unseen_since(last_uid):
             # BODY.PEEK[] so the server doesn't set the \Seen flag when returning the message
             _, data = client.conn.uid("fetch", uid, "(BODY.PEEK[])")
-            process_message(data[0][1], os.getenv("ATTACHMENTS_DIR") or "attachments", uid.decode())
+            if int(uid) > last_uid:
+                process_message(data[0][1], os.getenv("ATTACHMENTS_DIR") or "attachments", uid.decode())
             highest_uid = max(highest_uid, int(uid))
 
     save_last_uid(state_path, highest_uid)

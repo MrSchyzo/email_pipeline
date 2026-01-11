@@ -8,6 +8,9 @@ def process_message(raw_bytes: bytes | bytearray, attachments_dir: str, uid: str
     msg = email.message_from_bytes(raw_bytes)
     subject = decode_as_utf_8(msg.get("Subject", ""))
     sender = decode_as_utf_8(msg.get("From", ""))
+    date = extract_email_date(msg)
+    print(f"Processing message UID {uid} @ {date}: [{sender}] - {subject}")
+
 
     attachments_dir = Path(attachments_dir)
     attachments_dir.mkdir(exist_ok=True)
@@ -30,7 +33,7 @@ def process_message(raw_bytes: bytes | bytearray, attachments_dir: str, uid: str
         dst=[decode_as_utf_8(x) for x in msg.get_all("To", [])],
         body_text="\n".join(body_parts),
         attachments=files,
-        date=extract_email_date(msg)
+        date=date
     )
     
     execute_plugins(context)
