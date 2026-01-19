@@ -1,15 +1,17 @@
+import json
+import os
+import subprocess
+import sys
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 
-import json
-import subprocess
-import sys
-
 from mail_pipeline.env import load_env
+from mail_pipeline.plugins.filesystem import compute_file_checksum, find_paths_by_glob
 
 __plugins_path = Path("plugins")
 __plugin_venvs_path = Path("plugin_envs")
+__checksum_file = ".install_checksum"
 
 @dataclass
 class EmailContext:
@@ -43,23 +45,33 @@ def run_plugin(plugin_dir, ctx_json: str):
     if not venv.exists() or not python.exists():
         python = sys.executable
 
-    subprocess_run(
-        [python, "plugin.py"],
-        ctx_json,
-        plugin_dir,
-        load_env(plugin_dir / ".env")
-    )
+    paths = [str(x) for x in find_paths_by_glob(venv, "lib/**/site-packages")]
+    env = load_env(plugin_dir / ".env")
+    env["PYTHONPATH"] = os.pathsep.join(paths + [os.getenv("PYTHONPATH", "")])
+    env["PATH"] = os.getenv("PATH", "")
+    subprocess_run([python, "plugin.py"], ctx_json, plugin_dir, env)
     
 def ensure_venv(plugin_dir):
     venv = __plugin_venvs_path / plugin_dir.name
     requirements_path = plugin_dir / "requirements.txt"
-    if venv.exists() or not requirements_path.exists():
+    if not requirements_path.exists():
         return
+    
+    if not is_requirements_changed(requirements_path) and venv.exists():
+        return
+
+    if venv.exists():
+        subprocess_run(["rm", "-rf", str(venv)])
 
     subprocess_run([sys.executable, "-m", "venv", venv])
     subprocess_run([venv / "bin" / "pip", "install", "-r", plugin_dir / "requirements.txt"])
     subprocess_run([venv / "bin" / "pip", "install", "--upgrade", "certifi"])
     
+    save_current_checksum(requirements_path, compute_file_checksum(requirements_path))
+    
+def is_requirements_changed(requirements_path: Path) -> bool:
+    return get_current_checksum(requirements_path) != compute_file_checksum(requirements_path)
+
 def subprocess_run(cmd, input=None, cwd=None, env=None):
     result = subprocess.run(
         cmd,
@@ -72,3 +84,13 @@ def subprocess_run(cmd, input=None, cwd=None, env=None):
     print(result.stdout, file=sys.stdout) if result.stdout else None
     print(result.stderr, file=sys.stderr) if result.stderr else None
     result.check_returncode()
+    
+def get_current_checksum(requirements_path: Path) -> str | None:
+    checksum_file = requirements_path.parent / __checksum_file
+    if not checksum_file.exists():
+        return None
+    return checksum_file.read_text().strip()
+
+def save_current_checksum(requirements_path: Path, checksum: str):
+    checksum_file = requirements_path.parent / __checksum_file
+    checksum_file.write_text(checksum)

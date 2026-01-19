@@ -18,7 +18,7 @@ def run(ctx):
     for file in ctx["attachments"]:
         if file.lower().endswith(".pdf"):
             dst_root = os.getenv("DST_ROOT") or "."
-            dst_path = os.path.join(dst_root, f"{date.strftime("%Y%m")}_{type}.pdf")
+            dst_path = os.path.join(dst_root, f"{date.strftime('%Y%m')}_{type}.pdf")
             dst_directory = os.path.dirname(dst_path)
             if not os.path.exists(dst_directory):
                 os.makedirs(dst_directory, exist_ok=True)

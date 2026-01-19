@@ -2,7 +2,7 @@ import email
 from mailbox import Message
 from pathlib import Path
 
-from mail_pipeline.plugin_engine import EmailContext, execute_plugins
+from mail_pipeline.plugins.engine import EmailContext, execute_plugins
 
 def process_message(raw_bytes: bytes | bytearray, attachments_dir: str, uid: str) -> bool:
     msg = email.message_from_bytes(raw_bytes)

@@ -1,62 +1,21 @@
-import json, sys, os, ssl
+import json
+import os
+import ssl
+import sys
 import urllib.request
-from selenium import webdriver
+
+from mail_pipeline.plugins.selenium_utils import chrome_driver
 from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from pathlib import Path
+from selenium.webdriver.support.ui import WebDriverWait
 
-def check(ctx):
-    if "MyPubliacqua: nuova bolletta web documento" not in ctx["subject"]:
-        return False
-    if "no-reply@publiacqua.it" not in ctx["src"]:
-        return False
-    return True
 
-def run(ctx):
-    link = find_link(ctx["body_text"])
-    if not link:
-        return
-
-    driver = init_driver()
-    try:
-        driver.get(link)
-        
-        click_on_close_icon(driver)
-        pdf_url = find_pdf_link(driver)
-        
-        if not pdf_url:
-            print(f"Failed to find PDF URL on the page for mail {ctx["uid"]}.")
-            return
-        
-        date = get_date(driver, ctx.get("date", ""))     
-        
-        with get_pdf_response(pdf_url) as response:
-            dst_root = os.getenv("DST_ROOT") or "."
-            dst_path = os.path.join(dst_root, f"{date}_Acqua.pdf")
-            if not os.path.exists(os.path.dirname(dst_path)):
-                os.makedirs(os.path.dirname(dst_path), exist_ok=True)
-            with open(dst_path, "wb") as f:
-                f.write(response.read())
-    finally:
-        driver.quit()
-    
 def find_link(text: str) -> str | None:
     for line in text.splitlines():
         if "href=\"https://bollettainterattiva.publiacqua" in line:
             link = line.split("href=\"")[1].strip().split("\"")[0].strip()
             return link
     return None
-
-def init_driver():
-    options = webdriver.ChromeOptions()
-    options.add_argument("--headless")
-    options.add_argument("--no-sandbox")
-    options.add_argument("--disable-dev-shm-usage")
-    options.add_argument("--disable-gpu")
-    options.add_argument("--window-size=1920,1080")
-    driver = webdriver.Chrome(options=options)
-    return driver
 
 def click_on_close_icon(driver):
     try:
@@ -65,7 +24,7 @@ def click_on_close_icon(driver):
         )
         close_icon.click()
     except:
-        None
+        pass
 
 def find_pdf_link(driver) -> str | None:
     try:
@@ -100,5 +59,34 @@ def get_pdf_response(pdf_url: str):
 
 ctx = json.load(sys.stdin)
 
-if check(ctx):
-    run(ctx)
+if "MyPubliacqua: nuova bolletta web documento" not in ctx["subject"]:
+    exit(0)
+if "no-reply@publiacqua.it" not in ctx["src"]:
+    exit(0)
+
+link = find_link(ctx["body_text"])
+if not link:
+    exit(0)
+
+driver = chrome_driver()
+try:
+    driver.get(link)
+
+    click_on_close_icon(driver)
+    pdf_url = find_pdf_link(driver)
+
+    if not pdf_url:
+        print(f"Failed to find PDF URL on the page for mail {ctx['uid']}.")
+        exit(0)
+
+    date = get_date(driver, ctx.get("date", ""))
+
+    with get_pdf_response(pdf_url) as response:
+        dst_root = os.getenv("DST_ROOT") or "."
+        dst_path = os.path.join(dst_root, f"{date}_Acqua.pdf")
+        if not os.path.exists(os.path.dirname(dst_path)):
+            os.makedirs(os.path.dirname(dst_path), exist_ok=True)
+        with open(dst_path, "wb") as f:
+            f.write(response.read())
+finally:
+    driver.quit()

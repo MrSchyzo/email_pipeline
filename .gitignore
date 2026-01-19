@@ -9,3 +9,7 @@ attachments/
 main.spec
 src/**.egg-info
 plugin_envs/
+.install_checksum
+.error_dump/
+.DS_Store
+.idea/
