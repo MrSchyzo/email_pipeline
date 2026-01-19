@@ -1,4 +1,5 @@
 import email
+import os.path
 from mailbox import Message
 from pathlib import Path
 
@@ -9,7 +10,6 @@ def process_message(raw_bytes: bytes | bytearray, attachments_dir: str, uid: str
     subject = decode_as_utf_8(msg.get("Subject", ""))
     sender = decode_as_utf_8(msg.get("From", ""))
     date = extract_email_date(msg)
-    print(f"Processing message UID {uid} @ {date}: [{sender}] - {subject}")
 
     attachments_dir = Path(attachments_dir)
     attachments_dir.mkdir(exist_ok=True)
@@ -20,7 +20,7 @@ def process_message(raw_bytes: bytes | bytearray, attachments_dir: str, uid: str
         if part.get_content_type().startswith('text/'):
             body_parts = body_parts + [part.get_payload(decode=True).decode('utf-8', errors='ignore')]
         elif part.get_content_disposition() == "attachment":
-            filename = decode_as_utf_8(part.get_filename())
+            filename = os.path.basename(decode_as_utf_8(part.get_filename()))
             if filename:
                 path = attachments_dir / f'{uid}_{filename}'
                 path.write_bytes(part.get_payload(decode=True))
@@ -35,8 +35,14 @@ def process_message(raw_bytes: bytes | bytearray, attachments_dir: str, uid: str
         attachments=files,
         date=date
     )
-    
-    execute_plugins(context)
+
+    try:
+        print(f"Processing message UID {uid} @ {date}: [{sender}] - {subject}. Attachments count: {len(files)}.")
+        execute_plugins(context)
+    finally:
+        print(f"Finished processing message UID {uid}. Cleaning up attachments: {files}.")
+        for f in files:
+            f.unlink()
 
     return True
 

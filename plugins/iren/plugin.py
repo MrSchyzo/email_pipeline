@@ -21,8 +21,9 @@ if "la tua nuova bolletta" not in ctx["body_text"].lower():
 if "noreply@mail.clienti.irenyou.gruppoiren.it" not in ctx["src"]:
     exit(0)
 
+with_gui = os.getenv("GUI") == "true"
 folder = ensure_directory(os.getenv("DST_ROOT") or ".")
-driver = chrome_driver(folder, headless=True, trace_calls=True)
+driver = chrome_driver(folder, headless=not with_gui, trace_calls=True)
 state_file = ".latest_bill"
 latest_bill_date = Path(state_file).read_text().strip() if Path(state_file).exists() else "0"
 try:
