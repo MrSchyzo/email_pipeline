@@ -2,7 +2,6 @@ import json
 import os
 from pathlib import Path
 import sys
-import base64
 import traceback
 from mail_pipeline.plugins.filesystem import ensure_directory, wait_for_new_file
 from mail_pipeline.plugins.selenium_utils import chrome_driver, dump_debug, point_and_click, point_and_type
@@ -58,13 +57,10 @@ try:
     file_path = Path(folder) / ("".join(filename_str) + "_BustaH.pdf")
 
     new_file = wait_for_new_file(folder, files_before_download, timeout=5)
-    if new_file.endswith(".pdf"):
-        os.rename(new_file, file_path)
-    else:
-        print("Downloaded file is not a PDF.")
+    os.rename(new_file, file_path)
 except Exception as e:
     traceback.print_exc()
-    dump_debug(driver, html_path=".iren_dump.html", screenshot_path=".iren_dump.png")
+    dump_debug(driver)
 finally:
     driver.quit()
 
