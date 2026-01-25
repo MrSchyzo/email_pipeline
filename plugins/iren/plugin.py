@@ -1,78 +1,12 @@
-import base64
-import json
 import os
-import sys
 import time
-import uuid
 from pathlib import Path
-import functools
 
-import certifi
-import urllib3
+from bootstrap import state_file, file_saver, commodities, starting_headers, ctx
+from invoices_not_found import InvoicesNotFoundException
+from iren_helpers import extract_date, authorize, get_invoices_page, get_contracts, get_pdf_bytes
+from logger import plugin_log
 from mail_pipeline.plugins.filesystem import ensure_directory
-
-folder = ensure_directory(os.getenv("DST_ROOT") or ".")
-state_file = ".latest_bill"
-latest_bill_date = Path(state_file).read_text().strip() if Path(state_file).exists() else "0"
-recorded_bill_date = "0"
-
-http = urllib3.PoolManager(cert_reqs='CERT_REQUIRED', ca_certs=certifi.where())
-root = "https://clickiren-gateway.clienti.irenlucegas.it"
-headers = {
-    "Cache-Control": "no-cache",
-    "Pragma": "no-cache",
-    "Content-Type": "application/json",
-    "Connection": "keep-alive",
-    "Accept-Language": "it-IT",
-    "Accept-Encoding": "gzip, deflate, br, zstd",
-    "Accept": "application/json, text/plain, */*",
-    "Origin": "https://clienti.irenyou.gruppoiren.it",
-    "Referer": "https://clienti.irenyou.gruppoiren.it/area-riservata/spese",
-    "Host": "clickiren-gateway.clienti.irenlucegas.it",
-    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36",
-}
-
-def compare_bills_emission(a: dict[str, str], b: dict[str, str]) -> int:
-    date_a = a["dataEmissione"]
-    date_b = b["dataEmissione"]
-    return (date_a > date_b) - (date_a < date_b)
-
-def extract_date(date_str: str) -> str:
-    pieces = date_str.split(".")
-    pieces.reverse()
-    return "".join(pieces)
-
-def get_token(username: str, password: str, headers: dict[str, str]) -> str:
-    payload = json.dumps({"email": username, "password": password}).encode("utf-8")
-    res = http.request("POST", f"{root}/v2/api/authenticate", body=payload, headers=headers)
-    return json.loads(res.data.decode("utf-8"))["data"]["id_token"]
-
-def get_bills_page(heads: dict[str, str]) -> list[dict[str, str]]:
-    payload = json.dumps({"page": 1}).encode("utf-8")
-    bills = []
-    attempts = 5
-    while not bills and attempts > 0:
-        time.sleep(1)
-        attempts -= 1
-        res = http.request("POST", f"{root}/v3/api/archivio-bollette-p", headers=heads, body=payload)
-        bills = json.loads(res.data.decode("utf-8"))["data"]["fatture"]
-        bills.sort(key=functools.cmp_to_key(compare_bills_emission), reverse=False)
-        print(f"Found {len(bills)} bills")
-    return bills
-
-def get_contracts(heads: dict[str, str]) -> dict[str, str]:
-    res = http.request("GET", f"{root}/v3/api/ricerca/fornitura", headers=heads)
-    contracts = json.loads(res.data.decode("utf-8"))["data"]["contracts"]
-    return { contract["idFornitura"]: contract["bpAccountSAP"] for contract in contracts }
-
-commodities = {
-    "GAS": "Gas",
-    "ELE": "Luce",
-    "WASTE": "Rifiuti",
-    "H20": "Acqua",
-}
-
-ctx = json.load(sys.stdin)
 
 if "Emissione Bolletta" not in ctx["subject"]:
     exit(0)
@@ -81,37 +15,51 @@ if "la tua nuova bolletta" not in ctx["body_text"].lower():
 if "noreply@mail.clienti.irenyou.gruppoiren.it" not in ctx["src"]:
     exit(0)
 
-total_attempts = 10
-while total_attempts > 0:
-    token = get_token(os.getenv("USER"), os.getenv("PASSWORD"), headers)
+folder = ensure_directory(os.getenv("DST_ROOT") or ".")
+latest_invoice_date = Path(state_file).read_text().strip() if Path(state_file).exists() else "0"
+recorded_invoice_date = "0"
+remaining_attempts = 5
 
-    headers["Authorization"] = f"Bearer {token}"
-    headers["uuid"] = str(uuid.uuid4())
+while remaining_attempts > 0:
+    try:
+        plugin_log.info("Authorizing user", extra={"user": os.getenv("USER")})
+        _headers = authorize(os.getenv("USER"), os.getenv("PASSWORD"), starting_headers)
 
-    contract_lookup = get_contracts(headers)
-    receipts = get_bills_page(headers)
-    for receipt in receipts:
-        id_fornitura = receipt["idFornituraDwh"].strip()
-        emitted_at = extract_date(receipt["dataEmissione"])
-        if emitted_at < latest_bill_date:
-            continue
-        postfix = commodities[receipt["commodity"].upper()]
-        number = receipt["nome"].strip()
-        time.sleep(0.5)
-        partner_code = contract_lookup[id_fornitura]
-        response = http.request("GET", f"{root}/v3/api/downloadpdfbpm?numeroFattura={number}&businessPartner={partner_code}", headers=headers)
-        pdf_contents_b64 = json.loads(response.data.decode("utf-8"))["data"]["document"]
-        target_name = f"{emitted_at}_{postfix}.pdf"
-        if pdf_contents_b64:
-            (Path(f"{folder}")/target_name).write_bytes(base64.b64decode(pdf_contents_b64))
-            recorded_bill_date = max(emitted_at, recorded_bill_date)
-            Path(state_file).write_text(recorded_bill_date)
-            if recorded_bill_date != "0":
-                Path(state_file).write_text(recorded_bill_date)
-        else:
-            print(f"No PDF found for bill")
-    if not receipts:
-        total_attempts -= 1
-    else:
+        plugin_log.info("Fetching contracts and invoices")
+        contract_lookup = get_contracts(_headers)
+        invoices = get_invoices_page(_headers)
+        plugin_log.info("Fetched contracts and invoices",
+                    extra={"contracts": len(contract_lookup), "invoices": len(invoices)})
+
+        if not invoices:
+            raise InvoicesNotFoundException("No invoices found")
+
+        for invoice in invoices:
+            emitted_at = extract_date(invoice["dataEmissione"])
+            if emitted_at < latest_invoice_date:
+                continue
+
+            contract = contract_lookup[invoice["idFornituraDwh"]]
+
+            time.sleep(0.5)
+            file_saver.save_file(
+                filename=f"{emitted_at}_{commodities[invoice["commodity"].upper()]}.pdf",
+                content=get_pdf_bytes(invoice["nome"].strip(), contract["bpCode"], _headers),
+                key=contract["number"]
+            )
+            plugin_log.info("Downloaded invoice PDF",
+                        extra={"invoice_number": invoice["nome"], "contract_number": contract["number"],
+                               "commodity": invoice["commodity"], "emitted_at": emitted_at})
+
+            recorded_invoice_date = max(emitted_at, recorded_invoice_date)
+            if recorded_invoice_date != "0":
+                plugin_log.info("Updating latest invoice date", extra={"latest_invoice_date": recorded_invoice_date})
+                Path(state_file).write_text(recorded_invoice_date)
         break
-
+    except InvoicesNotFoundException as e:
+        plugin_log.warning("Invoices not found, retrying...", extra={"remaining_attempt": remaining_attempts})
+        remaining_attempts -= 1
+        time.sleep(1)
+    except BaseException as e:
+        plugin_log.exception("Unhandled exception. Failing the process.", exc_info=True, stack_info=True)
+        exit(1)

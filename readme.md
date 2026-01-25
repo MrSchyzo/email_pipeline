@@ -35,7 +35,8 @@ Plugins can have their own virtual enviroments: dependencies will be fetched by 
 To add a plugin just do the following:
 1. add a folder in `plugins` named after the plugin name
 1. add a `plugin.py` file that will be executed
-1. expect the mail being passed in the standard input as a json string with the following properties
+1. expect the mail being passed in stdin as a json string with the following properties
+    - `uid: uid` -> the email UID
     - `subject: str` -> the subject in UTF8
     - `src: str` -> the sender in UTF8
     - `dst: list[str]` -> the recipients in UTF8
@@ -45,6 +46,7 @@ To add a plugin just do the following:
 1. [optional] if dependencies are needed, add a `requirements.txt` file
 1. [optional] environment variables for the script can be included in a `.env` file
 
-Plugins are executed sequentially with no particular order for each unread email and they can do anything, including side effects.
+Plugins are executed in parallel with no particular order for each unread email and they can do anything, including side effects.
+To configure how many plugins are executed in parallel, set `PARALLELISM` environment variable to an integer value, default is 8.
 
 Some examples are present in `plugins` folder.

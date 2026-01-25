@@ -3,10 +3,10 @@ import os
 import time
 from pathlib import Path
 
-def ensure_directory(path: str | Path) -> str | Path:
+def ensure_directory(path: str | Path) -> Path:
     if not os.path.exists(path):
         os.makedirs(path, exist_ok=True)
-    return path
+    return Path(path)
 
 def compute_file_checksum(file_path) -> str:
     with open(file_path, "rb") as f:

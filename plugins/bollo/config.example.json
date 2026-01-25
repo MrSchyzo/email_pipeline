@@ -1,0 +1,8 @@
+{
+  "paths": {
+    "PLATE_NUMBER1": "/absolute/car_0",
+    "PLATE_NUMBER2": "/absolute/car_1",
+    "PLATE_NUMBER3": "./relative/car_2",
+    "otherwise": "."
+  }
+}

@@ -20,7 +20,7 @@ if "Cedolini del periodo&nbsp;" not in ctx["body_text"]:
 
 expected_period = ctx["body_text"].split("Cedolini del periodo&nbsp;")[1].split("<")[0].strip()
 folder = ensure_directory(os.getenv("DST_ROOT") or ".")
-driver = chrome_driver(folder, headless=True, force_open_pdf_external=True)
+driver = chrome_driver(str(folder), headless=True, force_open_pdf_external=True)
 wait = WebDriverWait(driver, 10)
 
 try:
@@ -54,9 +54,9 @@ try:
     files_before_download = set(os.listdir(folder))
     filename_str = expected_period.split("-")
     filename_str.reverse()
-    file_path = Path(folder) / ("".join(filename_str) + "_BustaH.pdf")
+    file_path = folder / ("".join(filename_str) + "_BustaH.pdf")
 
-    new_file = wait_for_new_file(folder, files_before_download, timeout=5)
+    new_file = wait_for_new_file(str(folder), files_before_download, timeout=5)
     os.rename(new_file, file_path)
 except Exception as e:
     traceback.print_exc()

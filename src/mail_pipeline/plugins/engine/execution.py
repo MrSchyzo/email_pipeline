@@ -14,8 +14,10 @@ from mail_pipeline.plugins.filesystem import find_paths_by_glob
 
 __plugins_path = Path("plugins")
 
+
 def execute_plugins(ctx: EmailContext):
     ctx_json = json.dumps({
+        "uid": ctx.uid,
         "subject": ctx.subject,
         "src": ctx.src,
         "dst": ctx.dst,
@@ -28,23 +30,29 @@ def execute_plugins(ctx: EmailContext):
         for plugin_dir in __plugins_path.iterdir():
             if plugin_dir.is_dir() and (plugin_dir / "plugin.py").exists():
                 futures.append(executor.submit(run_plugin, plugin_dir, ctx_json, ctx.uid))
-        for future in as_completed(futures):
+        for future in as_completed(futures, timeout=60):
             future.result()
 
 
-def run_plugin(plugin_dir, ctx_json: str, uid: str):
+def run_plugin(plugin_dir: Path, ctx_json: str, uid: str):
     venv, python = ensure_venv(plugin_dir)
 
     paths = [str(x) for x in find_paths_by_glob(venv, "lib/**/site-packages")]
     env = load_env(plugin_dir / ".env")
-    env["PYTHONPATH"] = os.pathsep.join(paths + [os.getenv("PYTHONPATH", "")])
+    env["PYTHONPATH"] = os.pathsep.join(paths + [str(plugin_dir.resolve()), os.getenv("PYTHONPATH", "")])
     env["PATH"] = os.getenv("PATH", "")
 
     logger.debug("Running plugin", extra={"plugin": plugin_dir.name, "env": env, "mail_uid": uid})
-    out, err, _, elapsed = subprocess_run([python, "plugin.py"], ctx_json, plugin_dir, env, expect_success=True)
+    out, err, code, elapsed = subprocess_run([python, "plugin.py"], ctx_json, plugin_dir, env, expect_success=False)
     _log_subprocess_text(out, plugin=plugin_dir.name, mail_uid=uid, stream="stdout", level="INFO")
     _log_subprocess_text(err, plugin=plugin_dir.name, mail_uid=uid, stream="stderr", level="WARNING")
-    logger.debug("Plugin finished", extra={"plugin": plugin_dir.name, "mail_uid": uid, "elapsed_ms": elapsed/1e6})
+    if code != 0:
+        logger.error("Plugin failed",
+                     extra={"env": env, "plugin": plugin_dir.name, "mail_uid": uid, "elapsed_ms": elapsed / 1e6,
+                            "return_code": code})
+        raise RuntimeError(f"Plugin {plugin_dir.name} failed with return code {code}")
+
+    logger.debug("Plugin finished", extra={"plugin": plugin_dir.name, "mail_uid": uid, "elapsed_ms": elapsed / 1e6})
 
 
 def _log_subprocess_text(

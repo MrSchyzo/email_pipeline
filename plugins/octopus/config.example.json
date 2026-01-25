@@ -1,0 +1,8 @@
+{
+  "paths": {
+    "123456789": "/absolute/luce_0",
+    "-123456789": "/absolute/gas_0",
+    "230123000": "./relative/gas_1",
+    "otherwise": "."
+  }
+}
