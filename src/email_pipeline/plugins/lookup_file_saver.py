@@ -2,8 +2,8 @@ import copy
 import json
 from pathlib import Path
 
-from mail_pipeline.logger import logger
-from mail_pipeline.plugins.filesystem import ensure_directory
+from email_pipeline.logger import logger
+from email_pipeline.plugins.filesystem import ensure_directory
 
 
 class LookupFileSaver:

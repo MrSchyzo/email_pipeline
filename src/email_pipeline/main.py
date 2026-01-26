@@ -1,10 +1,10 @@
 import os
 from pathlib import Path
-from mail_pipeline.client import IMAPClient
-from mail_pipeline.env import load_env
-from mail_pipeline.logger import logger
-from mail_pipeline.processor import process_message
-from mail_pipeline.state import load_last_uid, save_last_uid
+from email_pipeline.client import IMAPClient
+from email_pipeline.env import load_env
+from email_pipeline.logger import logger
+from email_pipeline.processor import process_message
+from email_pipeline.state import load_last_uid, save_last_uid
 
 
 def main():

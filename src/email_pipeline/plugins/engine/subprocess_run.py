@@ -1,7 +1,7 @@
 import subprocess
 import time
 
-from mail_pipeline.logger import logger
+from email_pipeline.logger import logger
 
 
 def subprocess_run(cmd, input=None, cwd=None, env=None, expect_success=False) -> tuple[str, str, int, int]:

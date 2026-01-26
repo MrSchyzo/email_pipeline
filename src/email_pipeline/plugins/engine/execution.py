@@ -5,12 +5,12 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 from pathlib import Path
 
-from mail_pipeline.env import load_env
-from mail_pipeline.logger import logger
-from mail_pipeline.plugins.engine.data import EmailContext
-from mail_pipeline.plugins.engine.subprocess_run import subprocess_run
-from mail_pipeline.plugins.engine.venv import ensure_venv
-from mail_pipeline.plugins.filesystem import find_paths_by_glob
+from email_pipeline.env import load_env
+from email_pipeline.logger import logger
+from email_pipeline.plugins.engine.data import EmailContext
+from email_pipeline.plugins.engine.subprocess_run import subprocess_run
+from email_pipeline.plugins.engine.venv import ensure_venv
+from email_pipeline.plugins.filesystem import find_paths_by_glob
 
 __plugins_path = Path("plugins")
 

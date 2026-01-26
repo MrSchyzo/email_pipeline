@@ -5,7 +5,7 @@
             "name": "Python: mail-pipeline",
             "type": "debugpy",
             "request": "launch",
-            "program": "${workspaceFolder}/src/mail_pipeline/main.py",
+            "program": "${workspaceFolder}/src/email_pipeline/main.py",
             "console": "integratedTerminal",
             "justMyCode": true,
             "env": {

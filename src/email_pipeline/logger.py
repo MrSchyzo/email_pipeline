@@ -63,7 +63,7 @@ class SafeStreamHandler(logging.StreamHandler):
 
 
 def setup_logging():
-    _logger = logging.getLogger("mail_pipeline")
+    _logger = logging.getLogger("email_pipeline")
     _logger.setLevel(os.getenv("LOG_LEVEL", logging.INFO))
 
     handler = logging.StreamHandler(sys.stdout)

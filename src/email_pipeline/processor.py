@@ -4,9 +4,9 @@ import time
 from mailbox import Message
 from pathlib import Path
 
-from mail_pipeline.plugins.engine.execution import execute_plugins
-from mail_pipeline.plugins.engine.data import EmailContext
-from mail_pipeline.logger import logger
+from email_pipeline.plugins.engine.execution import execute_plugins
+from email_pipeline.plugins.engine.data import EmailContext
+from email_pipeline.logger import logger
 
 
 def process_message(raw_bytes: bytes | bytearray, attachments_dir: str, uid: str) -> bool:

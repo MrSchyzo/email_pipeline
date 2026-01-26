@@ -6,7 +6,7 @@ from bootstrap import state_file, file_saver, commodities, starting_headers, ctx
 from invoices_not_found import InvoicesNotFoundException
 from iren_helpers import extract_date, authorize, get_invoices_page, get_contracts, get_pdf_bytes
 from logger import plugin_log
-from mail_pipeline.plugins.filesystem import ensure_directory
+from email_pipeline.plugins.filesystem import ensure_directory
 
 if "Emissione Bolletta" not in ctx["subject"]:
     exit(0)

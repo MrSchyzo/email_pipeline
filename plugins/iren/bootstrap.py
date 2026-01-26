@@ -3,7 +3,7 @@ import sys
 
 import certifi
 import urllib3
-from mail_pipeline.plugins.lookup_file_saver import LookupFileSaver
+from email_pipeline.plugins.lookup_file_saver import LookupFileSaver
 
 ctx = json.load(sys.stdin)
 

@@ -3,8 +3,8 @@ import os
 from pathlib import Path
 import sys
 import traceback
-from mail_pipeline.plugins.filesystem import ensure_directory, wait_for_new_file
-from mail_pipeline.plugins.selenium_utils import chrome_driver, dump_debug, point_and_click, point_and_type
+from email_pipeline.plugins.filesystem import ensure_directory, wait_for_new_file
+from email_pipeline.plugins.selenium_utils import chrome_driver, dump_debug, point_and_click, point_and_type
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait

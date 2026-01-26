@@ -10,4 +10,4 @@ COPY src/ ./src/
 COPY plugins/ ./plugins/
 COPY .env .env
 ENV PYTHONPATH="/app/src"
-CMD ["python", "src/mail_pipeline/main.py"]
+CMD ["python", "src/email_pipeline/main.py"]

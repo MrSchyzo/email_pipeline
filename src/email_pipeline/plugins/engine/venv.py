@@ -4,9 +4,9 @@ import time
 from pathlib import Path
 from typing import Any
 
-from mail_pipeline.logger import logger
-from mail_pipeline.plugins.engine.subprocess_run import subprocess_run
-from mail_pipeline.plugins.filesystem import compute_file_checksum
+from email_pipeline.logger import logger
+from email_pipeline.plugins.engine.subprocess_run import subprocess_run
+from email_pipeline.plugins.filesystem import compute_file_checksum
 
 
 def ensure_venv(plugin_dir) -> tuple[Any, str] | tuple[Any, Any] | None:
