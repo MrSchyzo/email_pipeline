@@ -6,7 +6,7 @@ import time
 import uuid
 
 from bootstrap import root, http
-from logger import plugin_log
+from email_pipeline.logger import logger
 
 
 def compare_invoices_emission(a: dict[str, str], b: dict[str, str]) -> int:
@@ -40,7 +40,7 @@ def get_invoices_page(heads: dict[str, str]) -> list[dict[str, str]]:
         invoices.sort(key=functools.cmp_to_key(compare_invoices_emission), reverse=False)
         if invoices:
             return invoices
-        plugin_log.info("No invoices found, retrying...", extra={"remaining_attempt": remaining_attempts})
+        logger.info("No invoices found, retrying...", extra={"remaining_attempt": remaining_attempts})
         time.sleep(1)
     return []
 

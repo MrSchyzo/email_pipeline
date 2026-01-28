@@ -66,6 +66,14 @@ def setup_logging():
     _logger = logging.getLogger("email_pipeline")
     _logger.setLevel(os.getenv("LOG_LEVEL", logging.INFO))
 
+    _logger.extra_params = {}
+    if os.getenv("LOG_PLUGIN"):
+        _logger.extra_params["plugin_name"] = os.getenv("LOG_PLUGIN")
+    if os.getenv("LOG_MAIL_UID"):
+        _logger.extra_params["mail_uid"] = os.getenv("MAIL_UID")
+    if os.getenv("LOG_PLUGIN_DIR"):
+        _logger.extra_params["plugin_dir"] = os.getenv("PLUGIN_DIR")
+
     handler = logging.StreamHandler(sys.stdout)
     handler.setFormatter(JsonFormatter())
 

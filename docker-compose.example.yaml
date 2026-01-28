@@ -1,0 +1,30 @@
+services:
+  mail-pipeline:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: mail-pipeline
+    restart: always
+    volumes:
+      - ./plugins:/app/plugins
+      - ./builtins:/app/builtins
+      - ./.env:/app/.env
+      - plugin_envs:/app/plugin_envs
+      - builtin_envs:/app/builtin_envs
+      - attachments:/app/attachments
+      - state:/app/state
+    environment:
+      - INTERVAL=43200
+      - PYTHONPATH=/app/src
+    command: >
+      sh -c "while true; do
+        python src/email_pipeline/main.py;
+        echo \"Sleeping for $${INTERVAL} seconds...\";
+        sleep $${INTERVAL};
+      done"
+
+volumes:
+  plugin_envs:
+  builtin_envs:
+  attachments:
+  state:

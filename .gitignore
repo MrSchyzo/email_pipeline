@@ -9,6 +9,8 @@ attachments/
 main.spec
 src/**.egg-info
 plugin_envs/
+builtin_envs/
+./plugins/
 .install_checksum
 .error_dump/
 .DS_Store

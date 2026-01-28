@@ -4,6 +4,7 @@ import time
 from pathlib import Path
 
 from selenium import webdriver
+from selenium.common import NoAlertPresentException
 from selenium.webdriver.chrome.webdriver import WebDriver
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.remote.webelement import WebElement

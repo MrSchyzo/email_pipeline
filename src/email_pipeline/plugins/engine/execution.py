@@ -12,7 +12,10 @@ from email_pipeline.plugins.engine.subprocess_run import subprocess_run
 from email_pipeline.plugins.engine.venv import ensure_venv
 from email_pipeline.plugins.filesystem import find_paths_by_glob
 
+__entrypoint_file = "plugin.py"
 __plugins_path = Path("plugins")
+__builtins_path = Path("builtins")
+__entrypoint_path = Path(__entrypoint_file)
 
 
 def execute_plugins(ctx: EmailContext):
@@ -27,28 +30,43 @@ def execute_plugins(ctx: EmailContext):
     })
     with ThreadPoolExecutor(max_workers=int(os.getenv("PARALLELISM", "8"))) as executor:
         futures = []
-        for plugin_dir in __plugins_path.iterdir():
-            if plugin_dir.is_dir() and (plugin_dir / "plugin.py").exists():
-                futures.append(executor.submit(run_plugin, plugin_dir, ctx_json, ctx.uid))
+        for plugin_dir in get_all_plugins(is_builtin=False):
+            futures.append(executor.submit(run_plugin, plugin_dir, ctx_json, ctx.uid, is_builtin=False))
+
+        for plugin_dir in get_all_plugins(is_builtin=True):
+            futures.append(executor.submit(run_plugin, plugin_dir, ctx_json, ctx.uid, is_builtin=True))
+
         for future in as_completed(futures, timeout=60):
             future.result()
 
 
-def run_plugin(plugin_dir: Path, ctx_json: str, uid: str):
-    venv, python = ensure_venv(plugin_dir)
+def get_all_plugins(is_builtin=False) -> list[Path]:
+    root = __builtins_path if is_builtin else __plugins_path
+    plugins = list(root.iterdir()) if root.exists() else []
+    return [p if p.exists() and (p / __entrypoint_file).exists() else [] for p in plugins]
+
+
+def run_plugin(plugin_dir: Path, ctx_json: str, uid: str, is_builtin=False):
+    venv, python = ensure_venv(plugin_dir, is_builtin=is_builtin)
 
     paths = [str(x) for x in find_paths_by_glob(venv, "lib/**/site-packages")]
     env = load_env(plugin_dir / ".env")
     env["PYTHONPATH"] = os.pathsep.join(paths + [str(plugin_dir.resolve()), os.getenv("PYTHONPATH", "")])
     env["PATH"] = os.getenv("PATH", "")
+    env["LOG_PLUGIN"] = plugin_dir.name
+    env["LOG_MAIL_UID"] = uid
+    env["LOG_PLUGIN_DIR"] = str(plugin_dir.resolve())
+    env["LOG_LEVEL"] = os.getenv("LOG_LEVEL", "INFO")
 
-    logger.debug("Running plugin", extra={"plugin": plugin_dir.name, "env": env, "mail_uid": uid})
-    out, err, code, elapsed = subprocess_run([python, "plugin.py"], ctx_json, plugin_dir, env, expect_success=False)
+    logger.debug("Running plugin", extra={"plugin": plugin_dir.name, "mail_uid": uid, "path": plugin_dir})
+    out, err, code, elapsed = subprocess_run([python, __entrypoint_file], ctx_json, plugin_dir, env,
+                                             expect_success=False)
     _log_subprocess_text(out, plugin=plugin_dir.name, mail_uid=uid, stream="stdout", level="INFO")
     _log_subprocess_text(err, plugin=plugin_dir.name, mail_uid=uid, stream="stderr", level="WARNING")
     if code != 0:
         logger.error("Plugin failed",
-                     extra={"env": env, "plugin": plugin_dir.name, "mail_uid": uid, "elapsed_ms": elapsed / 1e6,
+                     extra={"plugin": plugin_dir.name, "path": plugin_dir, "mail_uid": uid,
+                            "elapsed_ms": elapsed / 1e6,
                             "return_code": code})
         raise RuntimeError(f"Plugin {plugin_dir.name} failed with return code {code}")
 
