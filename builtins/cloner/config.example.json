@@ -1,0 +1,17 @@
+[{
+  "all": {
+    "from": "any\\s*regex",
+    "body": "any\\s*regex\\sforbody",
+    "subject": "any\\s*regex\\sforsubject"
+  },
+  "to": "some/path"
+},{
+  "any": {
+    "from": "some\\s*regex",
+    "all": {
+      "body": "any\\s*regex\\sforbody",
+      "subject": "any\\s*regex\\sforsubject"
+    }
+  },
+  "to": "some/other/path"
+}]
