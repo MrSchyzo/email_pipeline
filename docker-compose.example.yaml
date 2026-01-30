@@ -6,8 +6,9 @@ services:
     container_name: mail-pipeline
     restart: always
     volumes:
+      # Used to inject files in builtins, like .env files
+      - ./builtins:/app/builtins_inject
       - ./plugins:/app/plugins
-      - ./builtins:/app/builtins
       - ./.env:/app/.env
       - plugin_envs:/app/plugin_envs
       - builtin_envs:/app/builtin_envs
@@ -17,7 +18,7 @@ services:
       - INTERVAL=43200
       - PYTHONPATH=/app/src
     command: >
-      sh -c "while true; do
+      /bin/bash -c "./setup.sh && while true; do
         python src/email_pipeline/main.py;
         echo \"Sleeping for $${INTERVAL} seconds...\";
         sleep $${INTERVAL};

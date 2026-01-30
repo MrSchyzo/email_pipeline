@@ -8,5 +8,7 @@ RUN apt update && apt install -y chromium chromium-driver
 RUN mkdir -p plugin_envs && mkdir -p attachments && mkdir -p state
 COPY src/ ./src/
 COPY builtins/ ./builtins/
+COPY setup.sh ./setup.sh
+RUN chmod +x ./setup.sh
 ENV PYTHONPATH="/app/src"
 CMD ["python", "src/email_pipeline/main.py"]
