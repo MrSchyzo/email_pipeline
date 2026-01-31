@@ -110,12 +110,13 @@ try:
 
     with get_pdf_response(pdf_url) as response:
         dst_root = ensure_directory(os.getenv("DST_ROOT") or ".")
+        contents = response.read()
         tmp_path = dst_root / f"{uuid.uuid4().hex}.pdf"
-        tmp_path.write_bytes(response.read())
+        tmp_path.write_bytes(contents)
         try:
             document = pymupdf.open(tmp_path)
             contract_number = get_contract_number(document)
-            file_saver.save_file(filename=f"{date}_Acqua.pdf", content=response.read(), key=contract_number)
+            file_saver.save_file(filename=f"{date}_Acqua.pdf", content=contents, key=contract_number)
         finally:
             tmp_path.unlink(missing_ok=True)
 finally:
