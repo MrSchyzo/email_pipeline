@@ -14,7 +14,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 
 ctx = json.load(sys.stdin)
 
-if "Notifica Pubblicazione Cedolini" not in ctx["subject"]:
+if "Pubblicazione" not in ctx["subject"]:
     exit(0)
 if "portale@leoniweb.it" not in ctx["src"]:
     exit(0)
