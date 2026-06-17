@@ -86,7 +86,7 @@ ctx = json.load(sys.stdin)
 
 if "MyPubliacqua: nuova bolletta web documento" not in ctx["subject"]:
     exit(0)
-if "no-reply@publiacqua.it" not in ctx["src"]:
+if "@publiacqua.it" not in ctx["src"]:
     exit(0)
 
 file_saver = LookupFileSaver.from_json_config("config.json")
