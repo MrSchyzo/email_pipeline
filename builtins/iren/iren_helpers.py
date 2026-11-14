@@ -9,6 +9,10 @@ from bootstrap import root, http
 from email_pipeline.logger import logger
 
 
+class LoginFailedException(Exception):
+    pass
+
+
 def compare_invoices_emission(a: dict[str, str], b: dict[str, str]) -> int:
     date_a = a["dataEmissione"]
     date_b = b["dataEmissione"]
@@ -25,7 +29,12 @@ def authorize(username: str, password: str, headers: dict[str, str]) -> dict[str
     _headers = copy.deepcopy(headers)
     _payload = json.dumps({"email": username, "password": password}).encode("utf-8")
     _response = http.request("POST", f"{root}/v2/api/authenticate", body=_payload, headers=_headers)
-    _headers["Authorization"] = f"Bearer {json.loads(_response.data.decode("utf-8"))["data"]["id_token"]}"
+    _body = _response.data.decode("utf-8")
+    try:
+        _token = json.loads(_body)["data"]["id_token"]
+    except (ValueError, KeyError, TypeError):
+        raise LoginFailedException(f"Login failed with HTTP {_response.status}: {_body[:500]}")
+    _headers["Authorization"] = f"Bearer {_token}"
     _headers["uuid"] = str(uuid.uuid4())
     return _headers
 

@@ -1,0 +1,7 @@
+{
+  "paths": {
+    "OFFERCODE1": "/absolute/luce",
+    "OFFERCODE2": "./relative/gas",
+    "otherwise": "."
+  }
+}

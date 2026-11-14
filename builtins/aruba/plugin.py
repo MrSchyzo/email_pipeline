@@ -1,6 +1,8 @@
 from datetime import datetime
 import json, sys, os, calendar
 
+from email_pipeline.plugins.filesystem import copy_file
+
 def check(ctx):
     if "La tua fattura per gli ordini di Aruba" not in ctx["subject"]:
         return False
@@ -17,11 +19,7 @@ def run(ctx):
         if file.lower().endswith(".pdf"):
             dst_root = os.getenv("DST_ROOT") or "."
             dst_path = os.path.join(dst_root, f"{date}_fattura_{receipt}.pdf")
-            dst_directory = os.path.dirname(dst_path)
-            if not os.path.exists(dst_directory):
-                os.makedirs(dst_directory, exist_ok=True)
-            with open(file, "rb") as src_f, open(dst_path, "wb") as dst_f:
-                dst_f.write(src_f.read())
+            copy_file(file, dst_path)
 
 def extract_date(date_str: str) -> str:
     parts = date_str.split(" del ")[1].strip().split(" relativa ")[0].strip().replace("/", "-").split("-")
