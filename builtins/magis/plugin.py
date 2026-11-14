@@ -37,6 +37,6 @@ file_saver = LookupFileSaver.from_json_config("config.json", os.getenv("DST_ROOT
 
 for pdf in pdfs:
     offer_code = get_offer_code(pdf)
-    filename = f"{year}{month}{day}_{Path(pdf).name}"
+    filename = f"{year}{month}{day}_Bolletta.pdf"
     file_saver.save_file(filename=filename, content=Path(pdf).read_bytes(), key=offer_code, src=pdf)
     logger.info("Saved Magis invoice", extra={"file": filename, "offer_code": offer_code})
