@@ -1,4 +1,5 @@
 import json
+import os
 import sys
 
 import certifi
@@ -7,7 +8,7 @@ from email_pipeline.plugins.lookup_file_saver import LookupFileSaver
 
 ctx = json.load(sys.stdin)
 
-file_saver = LookupFileSaver.from_json_config("config.json")
+file_saver = LookupFileSaver.from_json_config("config.json", os.getenv("DST_ROOT") or ".")
 
 commodities = {
     "GAS": "Gas",

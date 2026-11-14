@@ -6,7 +6,6 @@ from bootstrap import state_file, file_saver, commodities, starting_headers, ctx
 from email_pipeline.logger import logger
 from invoices_not_found import InvoicesNotFoundException
 from iren_helpers import extract_date, authorize, get_invoices_page, get_contracts, get_pdf_bytes
-from email_pipeline.plugins.filesystem import ensure_directory
 
 if "Emissione Bolletta" not in ctx["subject"]:
     exit(0)
@@ -15,7 +14,6 @@ if "la tua nuova bolletta" not in ctx["body_text"].lower():
 if "noreply@mail.clienti.irenyou.gruppoiren.it" not in ctx["src"]:
     exit(0)
 
-folder = ensure_directory(os.getenv("DST_ROOT") or ".")
 latest_invoice_date = Path(state_file).read_text().strip() if Path(state_file).exists() else "0"
 recorded_invoice_date = "0"
 remaining_attempts = 5

@@ -15,7 +15,8 @@ class LookupFileSaver:
             self.lookup["otherwise"] = "."
 
     @classmethod
-    def from_json_config(cls, config_file: str | Path, default_directory: str = ".") -> "LookupFileSaver":
+    def from_json_config(cls, config_file: str | Path, root: str = ".") -> "LookupFileSaver":
+        """Relative paths in config are resolved against `root`, which is also the 'otherwise' default."""
         config_path = Path(config_file)
         paths = {}
         if config_path.exists():
@@ -25,9 +26,9 @@ class LookupFileSaver:
         else:
             logger.warning("Config file not found, defaulting to empty lookup", extra={"config_file": str(config_path.resolve())})
 
-        if "otherwise" not in paths:
-            paths["otherwise"] = default_directory
-        return cls(paths)
+        paths.setdefault("otherwise", ".")
+        # joining onto an absolute path returns it unchanged
+        return cls({key: str(Path(root) / path) for key, path in paths.items()})
 
     def save_file(self, filename: str, content: bytes, key: str | None = None):
         directory = self.lookup["otherwise"]
