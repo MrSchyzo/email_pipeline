@@ -5,7 +5,7 @@ from pathlib import Path
 from bootstrap import state_file, file_saver, commodities, starting_headers, ctx
 from email_pipeline.logger import logger
 from invoices_not_found import InvoicesNotFoundException
-from iren_helpers import extract_date, authorize, get_invoices_page, get_contracts, get_pdf_bytes
+from iren_helpers import LoginFailedException, extract_date, authorize, get_invoices_page, get_contracts, get_pdf_bytes
 
 if "Emissione Bolletta" not in ctx["subject"]:
     exit(0)
@@ -54,6 +54,10 @@ while remaining_attempts > 0:
                 logger.info("Updating latest invoice date", extra={"latest_invoice_date": recorded_invoice_date})
                 Path(state_file).write_text(recorded_invoice_date)
         break
+    except LoginFailedException as e:
+        # don't fail the pipeline: a broken login must not block other plugins or later emails
+        logger.error("Iren login failed, skipping", extra={"user": os.getenv("USER"), "error_msg": str(e)})
+        exit(0)
     except InvoicesNotFoundException as e:
         logger.warning("Invoices not found, retrying...", extra={"remaining_attempt": remaining_attempts})
         remaining_attempts -= 1
