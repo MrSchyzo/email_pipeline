@@ -1,5 +1,7 @@
 import pymupdf
 import json, sys, os
+
+from email_pipeline.plugins.filesystem import copy_file
 from datetime import date
 
 
@@ -24,11 +26,7 @@ def run(ctx):
                     date_str = date.strftime("%Y%m%d")
                     dst_root = os.getenv("DST_ROOT") or "."
                     dst_path = f"{dst_root}/Tim{date_str}.pdf"
-                    dst_directory = os.path.dirname(dst_path)
-                    if not os.path.exists(dst_directory):
-                        os.makedirs(dst_directory, exist_ok=True)
-                    with open(file, "rb") as src_f, open(dst_path, "wb") as dst_f:
-                        dst_f.write(src_f.read())
+                    copy_file(file, dst_path)
                     return
 
 def get_emission_date_from_text(text: str) -> date | None:

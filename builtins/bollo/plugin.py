@@ -42,7 +42,8 @@ for file in ctx["attachments"]:
         file_saver.save_file(
             filename=filename,
             content=Path(file).read_bytes(),
-            key=plate_number
+            key=plate_number,
+            src=file
         )
 
 exit(0)

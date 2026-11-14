@@ -1,11 +1,11 @@
 import json
 import os
 import re
-import shutil
 import sys
 from pathlib import Path
 
 from email_pipeline.logger import logger
+from email_pipeline.plugins.filesystem import copy_file
 
 
 class Cloner:
@@ -54,13 +54,12 @@ class Cloner:
 
         uid = self.ctx['uid']
         dest_path = Path(destination)
-        dest_path.mkdir(parents=True, exist_ok=True)
 
         for attachment in self.ctx.get("attachments", []):
             src_file = Path(attachment)
             cleaned_filename = src_file.name.replace(f"{uid}_", "") if uid in src_file.name else src_file.name
             if src_file.exists():
-                shutil.copy2(src_file, dest_path / cleaned_filename)
+                copy_file(src_file, dest_path / cleaned_filename)
 
 ctx = json.load(sys.stdin)
 

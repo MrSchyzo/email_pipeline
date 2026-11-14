@@ -5,7 +5,7 @@ import traceback
 from pathlib import Path
 
 from email_pipeline.logger import logger
-from email_pipeline.plugins.filesystem import ensure_directory, wait_for_new_file
+from email_pipeline.plugins.filesystem import ensure_directory, wait_for_new_file, move_file
 from email_pipeline.plugins.selenium_utils import chrome_driver, dump_debug, point_and_click, point_and_type
 from selenium.common import UnexpectedAlertPresentException, TimeoutException
 from selenium.webdriver.common.by import By
@@ -77,8 +77,7 @@ def wait_for_file_and_rename(files_before_download: set) -> Path:
     filename_str = expected_period.split("-")
     filename_str.reverse()
     file_path = folder / ("".join(filename_str) + "_BustaH.pdf")
-    os.rename(new_file, file_path)
-    return file_path
+    return move_file(new_file, file_path)
 
 
 try:
