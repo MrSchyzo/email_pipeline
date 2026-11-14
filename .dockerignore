@@ -9,3 +9,11 @@ main.spec
 src/**.egg-info
 plugin_envs/
 .vscode
+# secrets and runtime state: provided via compose volumes, never baked into the image
+**/.env
+**/config.json
+**/.error_dump
+**/.latest_invoice
+**/.install_checksum
+builtin_envs/
+plugins/

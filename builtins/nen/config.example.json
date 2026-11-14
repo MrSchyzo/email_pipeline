@@ -1,0 +1,7 @@
+{
+  "paths": {
+    "SUBSCRIPTION_ID_GAS": "/absolute/gas",
+    "SUBSCRIPTION_ID_LUCE": "./relative/luce",
+    "otherwise": "."
+  }
+}
